@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1290" height="2796" viewBox="0 0 1290 2796">
+  <rect width="1290" height="2796" fill="#07111a"/>
+  <g transform="translate(0,600)">
+    <rect x="345" y="300" width="600" height="600" rx="120" fill="url(#g)"/>
+    <defs>
+      <linearGradient id="g" x1="0" x2="1">
+        <stop offset="0" stop-color="#0a84ff"/>
+        <stop offset="1" stop-color="#5e5ce6"/>
+      </linearGradient>
+    </defs>
+    <text x="645" y="1050" font-size="72" text-anchor="middle" fill="#fff" style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text'">Pulse</text>
+  </g>
+</svg>
