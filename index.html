@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0A84FF">
+<title>Pulse Finance</title>
+<link rel="manifest" href="manifest.json">
+
+<style>
+:root{
+--bg:#0F1115;
+--card:#161A22;
+--accent:#0A84FF;
+--green:#30D158;
+--red:#FF453A;
+--text:#F2F2F7;
+--muted:#8E8E93;
+--radius:20px;
+font-family:-apple-system,BlinkMacSystemFont;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden}
+.app{max-width:750px;margin:auto;padding:env(safe-area-inset-top) 16px 100px}
+h1{margin:0;font-size:22px}
+.section{margin-bottom:20px}
+.card{
+background:var(--card);
+padding:18px;
+border-radius:var(--radius);
+margin-bottom:14px;
+transition:.25s ease;
+}
+.balance{
+font-size:36px;
+font-weight:700;
+color:var(--accent);
+}
+.grid2{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+}
+input,select{
+width:100%;
+padding:12px;
+border-radius:14px;
+border:1px solid #2C3342;
+background:#1C2029;
+color:var(--text);
+font-size:16px;
+}
+button{
+background:var(--accent);
+color:white;
+border:0;
+padding:10px 14px;
+border-radius:14px;
+font-weight:600;
+}
+.tabs{
+position:fixed;
+bottom:0;left:0;right:0;
+background:#11151C;
+display:flex;
+border-top:1px solid #1F2430;
+}
+.tab{
+flex:1;
+text-align:center;
+padding:12px 0;
+color:var(--muted);
+font-size:14px;
+}
+.tab.active{
+background:linear-gradient(90deg,var(--accent),#5E5CE6);
+color:white;
+}
+.calendar-grid{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:6px;
+}
+.day{
+background:#1C2029;
+border-radius:14px;
+min-height:70px;
+padding:6px;
+font-size:12px;
+}
+.day strong{font-size:13px}
+.progress{
+height:6px;
+background:#2C3342;
+border-radius:10px;
+overflow:hidden;
+margin-top:6px;
+}
+.progress-bar{
+height:6px;
+background:var(--accent);
+}
+.overlay{
+position:fixed;inset:0;background:rgba(0,0,0,.6);
+display:none;align-items:center;justify-content:center;
+padding:20px;
+}
+.overlay.show{display:flex}
+.modal{
+background:var(--card);
+padding:20px;
+border-radius:20px;
+width:100%;max-width:500px;
+}
+.fade{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="app fade">
+
+<h1>🐷 Pulse</h1>
+
+<div id="home">
+<div class="card">
+<div>Total Balance</div>
+<div class="balance" id="balance">$0</div>
+<div class="grid2">
+<div><small>Income</small><div id="income">$0</div></div>
+<div><small>Expenses</small><div id="expenses">$0</div></div>
+</div>
+</div>
+
+<div class="card">
+<div>Monthly Budget</div>
+<div id="budgetSummary"></div>
+</div>
+
+<div class="card">
+<div>Savings Goals</div>
+<div id="goals"></div>
+</div>
+</div>
+
+<div id="calendar" style="display:none"></div>
+<div id="transactions" style="display:none"></div>
+
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="switchTab('home',this)">Home</div>
+<div class="tab" onclick="switchTab('calendar',this)">Calendar</div>
+<div class="tab" onclick="switchTab('transactions',this)">Transactions</div>
+<div class="tab" onclick="openModal()">+</div>
+</div>
+
+<div class="overlay" id="overlay">
+<div class="modal">
+<h3>Add Entry</h3>
+<select id="type">
+<option value="income">Income</option>
+<option value="expense">Expense</option>
+<option value="bill">Bill</option>
+<option value="goal">Savings Goal</option>
+</select><br><br>
+<input id="name" placeholder="Name"><br><br>
+<input id="amount" type="number" placeholder="Amount"><br><br>
+<input id="date" type="date"><br><br>
+<select id="recurring">
+<option value="none">One Time</option>
+<option value="monthly">Monthly</option>
+</select><br><br>
+<button onclick="save()">Save</button>
+</div>
+</div>
+
+<script>
+const KEY="pulseProV1";
+let state=JSON.parse(localStorage.getItem(KEY))||{
+income:[],expenses:[],bills:[],goals:[],budget:2000
+};
+
+function persist(){localStorage.setItem(KEY,JSON.stringify(state))}
+function format(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0)}
+
+function renderHome(){
+let inc=state.income.reduce((a,b)=>a+b.amount,0);
+let exp=state.expenses.reduce((a,b)=>a+b.amount,0);
+document.getElementById("income").innerText=format(inc);
+document.getElementById("expenses").innerText=format(exp);
+document.getElementById("balance").innerText=format(inc-exp);
+
+let spentPercent=Math.min(100,(exp/state.budget)*100);
+document.getElementById("budgetSummary").innerHTML=
+`Spent ${format(exp)} of ${format(state.budget)}
+<div class="progress"><div class="progress-bar" style="width:${spentPercent}%"></div></div>`;
+
+let goalsDiv=document.getElementById("goals");
+goalsDiv.innerHTML="";
+state.goals.forEach(g=>{
+let percent=Math.min(100,(g.saved/g.amount)*100);
+goalsDiv.innerHTML+=
+`<div>${g.name} ${format(g.saved)}/${format(g.amount)}
+<div class="progress"><div class="progress-bar" style="width:${percent}%"></div></div></div><br>`;
+});
+}
+
+function renderCalendar(){
+let container=document.getElementById("calendar");
+container.innerHTML="";
+let date=new Date();
+let year=date.getFullYear();
+let month=date.getMonth();
+let first=new Date(year,month,1).getDay();
+let days=new Date(year,month+1,0).getDate();
+
+container.innerHTML="<h2>Calendar</h2><div class='calendar-grid'>";
+for(let i=0;i<first;i++)container.innerHTML+="<div></div>";
+for(let d=1;d<=days;d++){
+let dayDate=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+let events=[...state.expenses,...state.bills].filter(e=>e.date===dayDate);
+container.innerHTML+=
+`<div class="day"><strong>${d}</strong><br>${events.map(e=>"•"+e.name).join("<br>")}</div>`;
+}
+container.innerHTML+="</div>";
+}
+
+function renderTransactions(){
+let div=document.getElementById("transactions");
+div.innerHTML="<h2>All Transactions</h2>";
+[...state.income,...state.expenses,...state.bills]
+.sort((a,b)=>new Date(b.date)-new Date(a.date))
+.forEach(t=>{
+div.innerHTML+=`<div class="card">${t.name}<br>${format(t.amount)}<br>${t.date}</div>`;
+});
+}
+
+function save(){
+let type=document.getElementById("type").value;
+let name=document.getElementById("name").value;
+let amount=parseFloat(document.getElementById("amount").value)||0;
+let date=document.getElementById("date").value;
+let recurring=document.getElementById("recurring").value;
+
+if(type==="goal"){
+state.goals.push({name,amount,saved:0});
+}else{
+state[type==="income"?"income":type==="expense"?"expenses":"bills"]
+.push({name,amount,date,recurring});
+}
+persist();
+closeModal();
+renderAll();
+}
+
+function renderAll(){
+renderHome();
+renderCalendar();
+renderTransactions();
+}
+
+function openModal(){document.getElementById("overlay").classList.add("show")}
+function closeModal(){document.getElementById("overlay").classList.remove("show")}
+
+function switchTab(tab,el){
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+el.classList.add("active");
+document.getElementById("home").style.display=tab==="home"?"block":"none";
+document.getElementById("calendar").style.display=tab==="calendar"?"block":"none";
+document.getElementById("transactions").style.display=tab==="transactions"?"block":"none";
+}
+
+renderAll();
+
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js");
+}
+</script>
+</body>
+</html>
