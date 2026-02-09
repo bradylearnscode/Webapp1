@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0a84ff" />
+<title>Pulse — Personal Finance</title>
+
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-startup-image" href="splash.svg">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" defer></script>
+
+<style>
+  :root{
+    --bg:#0f1720; /* deep background */
+    --card:#0b1220;
+    --muted:#99a0ac;
+    --accent:#0a84ff;
+    --success:#32d74b;
+    --danger:#ff453a;
+    --glass: rgba(255,255,255,0.03);
+    --radius:16px;
+    font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial;
+  }
+
+  [data-theme="light"]{
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --muted:#667085;
+    --accent:#0a84ff;
+    --success:#34c759;
+    --danger:#ff3b30;
+    --glass: rgba(0,0,0,0.03);
+  }
+
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
+  .app{
+    max-width:720px;margin:0 auto;padding:env(safe-area-inset-top) 16px calc(64px + env(safe-area-inset-bottom));
+  }
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;padding:18px 0;
+  }
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{
+    width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#5e5ce6);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;
+  }
+  h1{font-size:18px;margin:0;color:var(--muted)}
+  .theme-btn{background:transparent;border:1px solid var(--glass);padding:8px;border-radius:12px;color:var(--muted)}
+
+  .balance-card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:14px;color:var(--muted);box-shadow:0 6px 24px rgba(2,6,23,0.2)}
+  .balance-top{display:flex;justify-content:space-between;align-items:center}
+  .balance-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .balance-amount{font-size:34px;font-weight:700;color:var(--accent);margin-top:8px}
+
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .stat{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.01));padding:10px;border-radius:12px}
+  .stat .val{font-weight:700;font-size:16px}
+  .stat .lbl{font-size:12px;color:var(--muted)}
+
+  .tabs{display:flex;gap:8px;margin:12px 0;overflow:auto}
+  .tab{flex:1;min-width:80px;padding:8px;border-radius:12px;background:transparent;border:1px solid var(--glass);text-align:center;color:var(--muted);font-weight:600}
+  .tab.active{background:linear-gradient(90deg,var(--accent),#5e5ce6);color:white}
+
+  .card{background:var(--card);padding:12px;border-radius:12px;margin-bottom:12px}
+  .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--muted)}
+  .add-btn{background:var(--accent);color:white;padding:8px 12px;border-radius:10px;border:0;font-weight:700}
+
+  .list{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent)}
+  .item .meta{display:flex;flex-direction:column}
+  .item .meta .name{font-weight:700;color:var(--muted)}
+  .item .meta .date{font-size:12px;color:var(--muted)}
+  .amount{font-weight:700}
+
+  .progress{height:10px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#5e5ce6)}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:flex-end;z-index:60;padding:16px}
+  .overlay.show{display:flex}
+  .modal{background:var(--card);border-radius:16px;padding:16px;width:100%;max-width:720px;box-shadow:0 24px 60px rgba(2,6,23,0.6)}
+  .form-row{display:flex;gap:8px;margin-bottom:8px}
+  .input,select{flex:1;padding:10px;border-radius:10px;border:1px solid var(--glass);background:transparent;color:var(--muted)}
+  .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+  .btn{padding:10px 12px;border-radius:12px;border:0;font-weight:700}
+  .btn.secondary{background:transparent;border:1px solid var(--glass);color:var(--muted)}
+  .btn.primary{background:var(--accent);color:white}
+
+  footer.bottom{position:fixed;left:0;right:0;bottom:0;padding:12px;background:transparent;display:flex;gap:8px;justify-content:center}
+  .small{font-size:12px;color:var(--muted)}
+  @media(min-width:720px){body{background:linear-gradient(180deg,#08121a,#071021)} .app{padding:36px}}
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden>PF</div>
+        <div>
+          <h1>Pulse</h1>
+          <div class="small">Simplified personal finance</div>
+        </div>
+      </div>
+      <div>
+        <button id="lockBtn" class="theme-btn small">Lock</button>
+        <button id="themeToggle" class="theme-btn small">Theme</button>
+      </div>
+    </header>
+
+    <section class="balance-card card" id="balanceCard" aria-live="polite">
+      <div class="balance-top">
+        <div>
+          <div class="balance-label">Total Balance</div>
+          <div class="balance-amount" id="totalBalance">$0.00</div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">This month</div>
+          <div style="font-weight:700" id="monthLabel"></div>
+        </div>
+      </div>
+
+      <div class="mini-grid">
+        <div class="stat">
+          <div class="val" id="incomeVal">$0.00</div>
+          <div class="lbl">Money In</div>
+        </div>
+        <div class="stat">
+          <div class="val" id="expenseVal">$0.00</div>
+          <div class="lbl">Money Out</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist" id="mainTabs">
+      <div class="tab active" data-tab="dashboard">Dashboard</div>
+      <div class="tab" data-tab="income">Income</div>
+      <div class="tab" data-tab="expenses">Expenses</div>
+      <div class="tab" data-tab="debts">Debts</div>
+      <div class="tab" data-tab="savings">Savings</div>
+    </div>
+
+    <main id="content">
+      <!-- Dashboard -->
+      <section class="card" id="dashboard">
+        <div class="section-title">
+          <div>Spending by category</div>
+          <div class="small"><button id="exportCSV" class="add-btn">Export CSV</button></div>
+        </div>
+        <div style="height:240px"><canvas id="catChart"></canvas></div>
+        <div style="height:12px"></div>
+
+        <div class="section-title" style="margin-top:12px">
+          <div>Budgets</div>
+          <div><button id="openBudget" class="add-btn">Manage</button></div>
+        </div>
+        <div id="budgets" class="list"></div>
+      </section>
+
+      <!-- Income -->
+      <section class="card" id="income" style="display:none">
+        <div class="section-title">
+          <div>Income</div>
+          <div><button data-open="addIncome" class="add-btn">Add</button></div>
+        </div>
+        <div id="incomeList" class="list"></div>
+      </section>
+
+      <!-- Expenses -->
+      <section class="card" id="expenses" style="display:none">
+        <div class="section-title">
+          <div>Expenses</div>
+          <div><button data-open="addExpense" class="add-btn">Add</button></div>
+        </div>
+        <div id="expenseList" class="list"></div>
+      </section>
+
+      <!-- Debts -->
+      <section class="card" id="debts" style="display:none">
+        <div class="section-title">
+          <div>Debts</div>
+          <div><button data-open="addDebt" class="add-btn">Add</button></div>
+        </div>
+        <div id="debtList" class="list"></div>
+      </section>
+
+      <!-- Savings -->
+      <section class="card" id="savings" style="display:none">
+        <div class="section-title">
+          <div>Savings</div>
+          <div><button data-open="addSaving" class="add-btn">Add</button></div>
+        </div>
+        <div id="savingList" class="list"></div>
+      </section>
+    </main>
+
+    <footer class="bottom">
+      <button id="backupBtn" class="theme-btn small">Backup</button>
+      <button id="importBtn" class="theme-btn small">Import</button>
+      <button id="resetBtn" class="theme-btn small">Reset</button>
+    </footer>
+  </div>
+
+  <!-- Modal / overlay -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true">
+    <div class="modal" id="modalContent">
+      <div id="modalTitle" style="font-weight:700;margin-bottom:8px">Add Entry</div>
+      <form id="modalForm">
+        <div class="form-row">
+          <input class="input" id="mName" placeholder="Name" required>
+          <input class="input" id="mAmount" type="number" step="0.01" placeholder="Amount" required>
+        </div>
+        <div class="form-row">
+          <select class="input" id="mCategory">
+            <option>Food</option><option>Transport</option><option>Shopping</option><option>Entertainment</option><option>Bills</option><option>Other</option>
+          </select>
+          <input class="input" id="mDate" type="date" required>
+        </div>
+        <div class="form-row" id="extraFields"></div>
+        <div class="btn-row">
+          <button type="button" id="cancelModal" class="btn secondary">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+/* ---------- App constants & storage ---------- */
+const STORAGE_KEY = 'pulse:v1';
+const AUTH_KEY = 'pulse:auth';
+const app = {
+  version: 1,
+  income: [],
+  expenses: [],
+  debts: [],
+  savings: [],
+  budgets: []
+};
+
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || app;
+let currentTab = 'dashboard';
+let currentModal = null;
+let editingId = null;
+let catChart = null;
+
+/* ---------- Utilities ---------- */
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v||0);
+const uid = () => crypto.randomUUID();
+
+/* ---------- Init ---------- */
+document.addEventListener('DOMContentLoaded', init);
+
+function init(){
+  // Date label
+  $('#monthLabel').textContent = new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+
+  bindUI();
+  renderAll();
+  registerSW();
+  tryAutoUnlock(); // try biometric unlock if configured
+}
+
+/* ---------- UI binding ---------- */
+function bindUI(){
+  // theme toggle
+  $('#themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('pulse:theme', next);
+  });
+
+  // tabs
+  $$('#mainTabs .tab').forEach(el=>{
+    el.addEventListener('click', ()=> switchTab(el.dataset.tab));
+  });
+
+  // open modal buttons
+  $$('[data-open]').forEach(b => {
+    b.addEventListener('click', e=> openModal(e.target.dataset.open));
+  });
+
+  // generic buttons
+  $('#openBudget').addEventListener('click', ()=> openModal('manageBudget'));
+  $('#exportCSV').addEventListener('click', exportCSV);
+  $('#backupBtn').addEventListener('click', backupJSON);
+  $('#importBtn').addEventListener('click', ()=> {
+    const input = document.createElement('input');
+    input.type='file'; input.accept='application/json';
+    input.onchange = e => {
+      const f = e.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = ()=> {
+        try{
+          const j = JSON.parse(r.result);
+          state = j; persist(); renderAll();
+          alert('Import complete.');
+        }catch(err){ alert('Import failed'); }
+      };
+      r.readAsText(f);
+    };
+    input.click();
+  });
+
+  $('#resetBtn').addEventListener('click', ()=>{
+    if(!confirm('Reset all data?')) return;
+    state = JSON.parse(JSON.stringify(app));
+    persist(); renderAll(); alert('Reset complete.');
+  });
+
+  $('#lockBtn').addEventListener('click', ()=> lockNow());
+
+  // modal form
+  $('#modalForm').addEventListener('submit', handleModalSave);
+  $('#cancelModal').addEventListener('click', closeModal);
+
+  // overlay click to close
+  $('#overlay').addEventListener('click', e => { if(e.target.id==='overlay') closeModal() });
+}
+
+/* ---------- Storage ---------- */
+function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function load(){ state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || app; }
+
+/* ---------- Render ---------- */
+function renderAll(){
+  load();
+  renderBalance();
+  renderLists();
+  renderBudgets();
+  drawChart();
+  highlightTab();
+}
+
+function renderBalance(){
+  const totalIncome = sum(state.income);
+  const totalExpenses = sum(state.expenses) + sum(state.debts);
+  $('#incomeVal').textContent = money(totalIncome);
+  $('#expenseVal').textContent = money(totalExpenses);
+  $('#totalBalance').textContent = money(totalIncome - totalExpenses);
+}
+
+function renderLists(){
+  renderList('income', state.income, '#incomeList', true);
+  renderList('expenses', state.expenses, '#expenseList', false);
+  renderList('debts', state.debts, '#debtList', false, renderDebtItem);
+  renderList('savings', state.savings, '#savingList', false, renderSavingItem);
+}
+
+function renderList(key, arr, selector, positive=false, customRender){
+  const container = $(selector);
+  if(!arr.length){ container.innerHTML = '<div class="item"><div class="meta"><div class="name">No entries</div></div></div>'; return; }
+  const html = arr.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(item=>{
+    if(customRender) return customRender(item);
+    return `
+      <div class="item">
+        <div class="meta"><div class="name">${escape(item.name)}</div><div class="date small">${formatDate(item.date)}</div></div>
+        <div style="text-align:right">
+          <div class="amount ${positive? 'text-success':''}">${positive? '+':''}${money(item.amount)}</div>
+          <div style="margin-top:6px"><button onclick="editItem('${key}','${item.id}')" class="theme-btn small">Edit</button>
+            <button onclick="removeItem('${key}','${item.id}')" class="theme-btn small">Del</button></div>
+        </div>
+      </div>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+function renderDebtItem(item){
+  const percent = Math.round((item.paid / (item.total || 1)) * 100);
+  return `<div class="item">
+    <div class="meta"><div class="name">${escape(item.name)}</div><div class="date small">Balance: ${money(item.total - item.paid)}</div></div>
+    <div style="text-align:right;width:200px">
+      <div style="font-weight:700">${money(item.paid)} / ${money(item.total)}</div>
+      <div style="margin-top:6px" class="progress"><i style="width:${Math.min(100,percent)}%"></i></div>
+      <div style="margin-top:6px"><button onclick="editItem('debts','${item.id}')" class="theme-btn small">Edit</button>
+      <button onclick="removeItem('debts','${item.id}')" class="theme-btn small">Del</button></div>
+    </div>
+  </div>`;
+}
+
+function renderSavingItem(item){
+  const percent = Math.round((item.saved / (item.target || 1)) * 100);
+  return `<div class="item">
+    <div class="meta"><div class="name">${escape(item.name)}</div><div class="date small">Saved: ${money(item.saved)}</div></div>
+    <div style="text-align:right;width:200px">
+      <div style="font-weight:700">${percent}%</div>
+      <div style="margin-top:6px" class="progress"><i style="width:${Math.min(100,percent)}%"></i></div>
+      <div style="margin-top:6px"><button onclick="editItem('savings','${item.id}')" class="theme-btn small">Edit</button>
+      <button onclick="removeItem('savings','${item.id}')" class="theme-btn small">Del</button></div>
+    </div>
+  </div>`;
+}
+
+function renderBudgets(){
+  const container = $('#budgets');
+  if(!state.budgets.length){ container.innerHTML = '<div class="item"><div class="meta"><div class="name">No budgets set</div></div></div>'; return; }
+  const currentMonth = new Date().getMonth();
+  container.innerHTML = state.budgets.map(b=>{
+    const spent = state.expenses.filter(e => new Date(e.date).getMonth()===currentMonth && e.category===b.category).reduce((s,x)=>s+x.amount,0);
+    const pct = Math.round((spent / (b.limit||1))*100);
+    const rem = b.limit - spent;
+    return `<div class="item">
+      <div class="meta"><div class="name">${b.category}</div><div class="date small">Limit ${money(b.limit)} • Spent ${money(spent)}</div></div>
+      <div style="width:200px;text-align:right">
+        <div class="small">${rem < 0 ? 'Over' : 'Remain'} ${money(rem)}</div>
+        <div style="margin-top:6px" class="progress"><i style="width:${Math.min(100,pct)}%"></i></div>
+        <div style="margin-top:6px"><button onclick="editBudget('${b.id}')" class="theme-btn small">Edit</button>
+        <button onclick="removeBudget('${b.id}')" class="theme-btn small">Del</button></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function highlightTab(){
+  $$('#mainTabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab===currentTab));
+  ['dashboard','income','expenses','debts','savings'].forEach(k => {
+    $(`#${k}`).style.display = (k===currentTab ? 'block' : 'none');
+  });
+}
+
+/* ---------- Chart ---------- */
+function drawChart(){
+  const ctx = document.getElementById('catChart').getContext('2d');
+  const totals = {};
+  state.expenses.forEach(e => totals[e.category] = (totals[e.category]||0) + e.amount);
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+  if(catChart) catChart.destroy();
+  catChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels, datasets:[{data, backgroundColor:['#0a84ff','#5e5ce6','#34c759','#ff9500','#ff3b30','#af52de']}]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+}
+
+/* ---------- Helpers ---------- */
+function sum(arr){ return arr.reduce((s,x)=>s + (x.amount||0),0); }
+function formatDate(s){ const d = new Date(s); return d.toLocaleDateString(); }
+function escape(s){ return String(s).replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+/* ---------- CRUD ---------- */
+function openModal(type, data){
+  currentModal = type;
+  editingId = data?.id || null;
+  $('#modalTitle').textContent = {
+    addIncome:'Add Income', addExpense:'Add Expense', addDebt:'Add Debt', addSaving:'Add Saving', manageBudget:'Manage Budgets'
+  }[type] || 'Entry';
+  $('#mName').value = data?.name||'';
+  $('#mAmount').value = data?.amount||'';
+  $('#mDate').value = data?.date || new Date().toISOString().slice(0,10);
+  $('#mCategory').value = data?.category || 'Other';
+  // extra fields
+  $('#extraFields').innerHTML = '';
+  if(type==='addDebt'){
+    $('#extraFields').innerHTML = `<input class="input" id="mTotal" placeholder="Total debt" type="number" value="${data?.total||''}">
+    <input class="input" id="mPaid" placeholder="Paid so far" type="number" value="${data?.paid||0}">`;
+  } else if(type==='addSaving'){
+    $('#extraFields').innerHTML = `<input class="input" id="mTarget" placeholder="Target amount" type="number" value="${data?.target||0}">
+    <input class="input" id="mSaved" placeholder="Saved so far" type="number" value="${data?.saved||0}">`;
+  } else if(type==='manageBudget'){
+    // open budget manager (simple inline)
+    openBudgetManager();
+    return;
+  }
+  $('#overlay').classList.add('show');
+}
+
+function closeModal(){ $('#overlay').classList.remove('show'); currentModal=null; editingId=null; $('#modalForm').reset(); $('#extraFields').innerHTML=''; }
+
+function handleModalSave(e){
+  e.preventDefault();
+  const name = $('#mName').value.trim();
+  const amount = parseFloat($('#mAmount').value) || 0;
+  const date = $('#mDate').value || new Date().toISOString().slice(0,10);
+  const category = $('#mCategory').value;
+  if(currentModal==='addIncome'){
+    if(editingId) {
+      const it = state.income.find(i=>i.id===editingId); Object.assign(it,{name,amount,date,category});
+    } else state.income.push({id:uid(),name,amount,date,category});
+  } else if(currentModal==='addExpense'){
+    if(editingId) { const it=state.expenses.find(i=>i.id===editingId); Object.assign(it,{name,amount,date,category}); }
+    else state.expenses.push({id:uid(),name,amount,date,category});
+  } else if(currentModal==='addDebt'){
+    const total = parseFloat($('#mTotal').value) || 0; const paid = parseFloat($('#mPaid').value) || 0;
+    if(editingId){ const it = state.debts.find(i=>i.id===editingId); Object.assign(it,{name,total,paid}); }
+    else state.debts.push({id:uid(),name,total,paid});
+  } else if(currentModal==='addSaving'){
+    const target = parseFloat($('#mTarget').value)||0; const saved = parseFloat($('#mSaved').value)||0;
+    if(editingId){ const it=state.savings.find(i=>i.id===editingId); Object.assign(it,{name,target,saved}); }
+    else state.savings.push({id:uid(),name,target,saved});
+  }
+  persist(); renderAll(); closeModal();
+}
+
+/* ---------- Budget manager ---------- */
+function openBudgetManager(){
+  // quick inline manager modal
+  $('#modalTitle').textContent = 'Budgets';
+  const rows = state.budgets.map(b => `<div style="display:flex;gap:8px;margin-bottom:8px"><input class="input" data-bid="${b.id}" value="${b.category}"><input class="input" data-bl="${b.id}" type="number" value="${b.limit}"><button onclick="delBudget('${b.id}')">Del</button></div>`).join('');
+  $('#extraFields').innerHTML = rows + `<div style="display:flex;gap:8px"><input id="newBudgetCat" class="input" placeholder="Category"><input id="newBudgetLimit" class="input" placeholder="Limit" type="number"><button id="addBudgetBtn" class="btn primary">Add</button></div>`;
+  $('#overlay').classList.add('show');
+  $('#addBudgetBtn').addEventListener('click', ()=> {
+    const cat = $('#newBudgetCat').value.trim(); const lim = parseFloat($('#newBudgetLimit').value)||0;
+    if(!cat) return alert('Enter category');
+    state.budgets.push({id:uid(),category:cat,limit:lim});
+    persist(); renderAll(); openModal('manageBudget'); // reopen to show changes
+  });
+  // attach change listeners to existing inputs
+  $$('#extraFields [data-bid]').forEach(inp => {
+    inp.addEventListener('change', ()=>{
+      const id = inp.dataset.bid;
+      const b = state.budgets.find(x=>x.id===id);
+      b.category = inp.value;
+      persist(); renderBudgets();
+    });
+  });
+  $$('#extraFields [data-bl]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const id = inp.dataset.bl;
+      const b= state.budgets.find(x=>x.id===id);
+      b.limit = parseFloat(inp.value)||0;
+      persist(); renderBudgets();
+    });
+  });
+}
+
+function delBudget(id){ state.budgets = state.budgets.filter(b=>b.id!==id); persist(); renderBudgets(); }
+function editBudget(id){ const b=state.budgets.find(x=>x.id===id); openModal('manageBudget'); $('#overlay').scrollTo({top:0}); }
+
+/* ---------- Edit / remove ---------- */
+function editItem(key,id){
+  const arr = state[key];
+  const item = arr.find(i=>i.id===id);
+  if(!item) return;
+  if(key==='income') openModal('addIncome', item);
+  if(key==='expenses') openModal('addExpense', item);
+  if(key==='debts') openModal('addDebt', item);
+  if(key==='savings') openModal('addSaving', item);
+}
+function removeItem(key,id){
+  if(!confirm('Delete?')) return;
+  state[key] = state[key].filter(i=>i.id!==id); persist(); renderAll();
+}
+
+/* ---------- CSV / backup ---------- */
+function exportCSV(){
+  const rows = [['type','id','name','amount','date','category','extra1','extra2']];
+  ['income','expenses'].forEach(t => state[t].forEach(i => rows.push([t,i.id,i.name,i.amount,i.date,i.category,'',''])));
+  state.debts.forEach(d => rows.push(['debts',d.id,d.name,d.total,'','',d.paid,'']));
+  state.savings.forEach(s => rows.push(['savings',s.id,s.name,s.saved,'','',s.target,'']));
+  const csv = rows.map(r => r.map(c => `"${String(c||'').replaceAll('"','""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='pulse-export.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+function backupJSON(){
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='pulse-backup.json'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ---------- Service worker ---------- */
+function registerSW(){
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('SW failed'));
+}
+
+/* ---------- Tabs ---------- */
+function switchTab(tab){
+  currentTab = tab;
+  highlightTab();
+}
+
+/* ---------- Simple lock: WebAuthn (Face ID) + fallback passcode ---------- */
+
+/* Helper: base64 conversions */
+function toBase64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function fromBase64(s){ const bin = atob(s); const arr = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return arr.buffer; }
+
+async function tryAutoUnlock(){
+  const cred = localStorage.getItem(AUTH_KEY);
+  if(!cred) return; // not registered
+  // attempt get()
+  try{
+    await authGet(); // on success leave unlocked
+    console.log('Unlocked by WebAuthn');
+  }catch(err){
+    console.log('Auth failed', err);
+  }
+}
+
+async function registerAuth(){
+  if(!window.PublicKeyCredential) { alert('WebAuthn not supported'); return; }
+  // create options (challenge generated client-side — acceptable for local-only)
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const userId = crypto.getRandomValues(new Uint8Array(16));
+  const publicKey = {
+    challenge,
+    rp: { name: "Pulse" },
+    user: { id: userId, name: "local-user", displayName: "Local User" },
+    pubKeyCredParams: [{alg:-7,type:"public-key"}],
+    timeout: 60000,
+    authenticatorSelection: { userVerification: "required" },
+    attestation: "direct"
+  };
+  try{
+    const cred = await navigator.credentials.create({ publicKey });
+    const rawId = toBase64(cred.rawId);
+    localStorage.setItem(AUTH_KEY, rawId);
+    alert('Biometric unlock set up');
+  }catch(e){ console.error(e); alert('Registration failed'); }
+}
+
+async function authGet(){
+  const stored = localStorage.getItem(AUTH_KEY);
+  if(!stored) return Promise.reject('no-credential');
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const publicKey = {
+    challenge,
+    allowCredentials: [{ id: fromBase64(stored), type: 'public-key', transports:['internal'] }],
+    timeout: 60000,
+    userVerification: 'required'
+  };
+  const assertion = await navigator.credentials.get({ publicKey });
+  // success if no exception thrown
+  return assertion;
+}
+
+/* Lock UI */
+async function lockNow(){
+  const has = !!localStorage.getItem(AUTH_KEY);
+  if(!has){
+    if(confirm('Set up biometric unlock (Face ID) for this device?')) await registerAuth();
+    return;
+  } else {
+    // require auth now: user must pass to continue
+    try{
+      await authGet();
+      alert('Unlocked');
+    }catch(err){
+      const pass = prompt('Enter fallback passcode (or Cancel) to unlock:');
+      if(pass === '0000') alert('Unlocked (fallback)'); // fallback: in real app store hashed pass
+      else alert('Unlock cancelled or failed');
+    }
+  }
+}
+
+/* ---------- Helpers for exports in global scope ---------- */
+window.exportCSV = exportCSV;
+window.editItem = editItem;
+window.removeItem = removeItem;
+window.editBudget = editBudget;
+window.removeBudget = delBudget;
+</script>
+</body>
+</html>
