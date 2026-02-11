@@ -5,103 +5,74 @@
 <meta name="viewport"
 content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0A84FF">
-<title>Pulse Finance</title>
+<meta name="theme-color" content="#2563EB">
+<title>Ledger</title>
 <link rel="manifest" href="manifest.json">
 
 <style>
 :root{
---bg:#0F1115;
---card:#161A22;
---accent:#0A84FF;
---green:#30D158;
---red:#FF453A;
---text:#F2F2F7;
---muted:#8E8E93;
+--bg:#0B0F17;
+--card:#121826;
+--muted:#8A94A6;
+--text:#F1F5F9;
+--accent:#2563EB;
+--green:#22C55E;
+--red:#EF4444;
 --radius:20px;
 font-family:-apple-system,BlinkMacSystemFont;
 }
-
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden}
-.app{max-width:750px;margin:auto;padding:env(safe-area-inset-top) 16px 100px}
+body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden}
+.app{max-width:820px;margin:auto;padding:env(safe-area-inset-top) 18px 100px}
 h1{margin:0;font-size:22px}
-.section{margin-bottom:20px}
+h2{font-size:18px;margin:0 0 10px}
 .card{
 background:var(--card);
-padding:18px;
 border-radius:var(--radius);
+padding:18px;
 margin-bottom:14px;
 transition:.25s ease;
 }
-.balance{
-font-size:36px;
-font-weight:700;
-color:var(--accent);
-}
-.grid2{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-}
+.balance{font-size:36px;font-weight:700;color:var(--accent)}
+.row{display:flex;justify-content:space-between;align-items:center}
+small{color:var(--muted)}
 input,select{
 width:100%;
 padding:12px;
 border-radius:14px;
-border:1px solid #2C3342;
-background:#1C2029;
+border:1px solid #1E293B;
+background:#111827;
 color:var(--text);
 font-size:16px;
 }
 button{
 background:var(--accent);
-color:white;
 border:0;
+color:white;
 padding:10px 14px;
 border-radius:14px;
 font-weight:600;
 }
-.tabs{
-position:fixed;
-bottom:0;left:0;right:0;
-background:#11151C;
-display:flex;
-border-top:1px solid #1F2430;
-}
-.tab{
-flex:1;
-text-align:center;
-padding:12px 0;
-color:var(--muted);
-font-size:14px;
-}
-.tab.active{
-background:linear-gradient(90deg,var(--accent),#5E5CE6);
-color:white;
-}
-.calendar-grid{
-display:grid;
-grid-template-columns:repeat(7,1fr);
-gap:6px;
-}
-.day{
-background:#1C2029;
-border-radius:14px;
-min-height:70px;
-padding:6px;
-font-size:12px;
-}
-.day strong{font-size:13px}
 .progress{
-height:6px;
-background:#2C3342;
-border-radius:10px;
+height:8px;
+background:#1E293B;
+border-radius:20px;
 overflow:hidden;
 margin-top:6px;
 }
-.progress-bar{
-height:6px;
-background:var(--accent);
+.bar{height:8px;background:var(--accent)}
+.tabs{
+position:fixed;bottom:0;left:0;right:0;
+background:#0F172A;
+display:flex;border-top:1px solid #1E293B;
+}
+.tab{
+flex:1;text-align:center;padding:12px 0;
+color:var(--muted);font-size:13px;
+}
+.tab.active{
+background:linear-gradient(90deg,#2563EB,#3B82F6);
+color:white;
 }
 .overlay{
 position:fixed;inset:0;background:rgba(0,0,0,.6);
@@ -116,127 +87,151 @@ border-radius:20px;
 width:100%;max-width:500px;
 }
 .fade{animation:fade .25s ease}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+@keyframes fade{
+from{opacity:0;transform:translateY(8px)}
+to{opacity:1;transform:translateY(0)}
+}
 </style>
 </head>
 <body>
 
 <div class="app fade">
 
-<h1>🐷 Pulse</h1>
+<h1>Ledger</h1>
 
-<div id="home">
-<div class="card">
-<div>Total Balance</div>
-<div class="balance" id="balance">$0</div>
-<div class="grid2">
-<div><small>Income</small><div id="income">$0</div></div>
-<div><small>Expenses</small><div id="expenses">$0</div></div>
-</div>
-</div>
-
-<div class="card">
-<div>Monthly Budget</div>
-<div id="budgetSummary"></div>
-</div>
-
-<div class="card">
-<div>Savings Goals</div>
-<div id="goals"></div>
-</div>
-</div>
-
-<div id="calendar" style="display:none"></div>
+<div id="dashboard"></div>
+<div id="accounts" style="display:none"></div>
 <div id="transactions" style="display:none"></div>
+<div id="budget" style="display:none"></div>
+<div id="goals" style="display:none"></div>
 
 </div>
 
 <div class="tabs">
-<div class="tab active" onclick="switchTab('home',this)">Home</div>
-<div class="tab" onclick="switchTab('calendar',this)">Calendar</div>
+<div class="tab active" onclick="switchTab('dashboard',this)">Home</div>
+<div class="tab" onclick="switchTab('accounts',this)">Accounts</div>
 <div class="tab" onclick="switchTab('transactions',this)">Transactions</div>
-<div class="tab" onclick="openModal()">+</div>
+<div class="tab" onclick="switchTab('budget',this)">Budget</div>
+<div class="tab" onclick="switchTab('goals',this)">Goals</div>
 </div>
 
 <div class="overlay" id="overlay">
 <div class="modal">
-<h3>Add Entry</h3>
+<h2>Add Item</h2>
 <select id="type">
-<option value="income">Income</option>
-<option value="expense">Expense</option>
-<option value="bill">Bill</option>
-<option value="goal">Savings Goal</option>
+<option value="account">Account</option>
+<option value="transaction">Transaction</option>
+<option value="budget">Budget</option>
+<option value="goal">Goal</option>
 </select><br><br>
 <input id="name" placeholder="Name"><br><br>
 <input id="amount" type="number" placeholder="Amount"><br><br>
 <input id="date" type="date"><br><br>
-<select id="recurring">
-<option value="none">One Time</option>
-<option value="monthly">Monthly</option>
-</select><br><br>
 <button onclick="save()">Save</button>
 </div>
 </div>
 
 <script>
-const KEY="pulseProV1";
+const KEY="ledgerV1";
 let state=JSON.parse(localStorage.getItem(KEY))||{
-income:[],expenses:[],bills:[],goals:[],budget:2000
+accounts:[],
+transactions:[],
+budgets:[],
+goals:[]
 };
 
 function persist(){localStorage.setItem(KEY,JSON.stringify(state))}
 function format(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0)}
 
-function renderHome(){
-let inc=state.income.reduce((a,b)=>a+b.amount,0);
-let exp=state.expenses.reduce((a,b)=>a+b.amount,0);
-document.getElementById("income").innerText=format(inc);
-document.getElementById("expenses").innerText=format(exp);
-document.getElementById("balance").innerText=format(inc-exp);
+function renderDashboard(){
+let net=state.accounts.reduce((a,b)=>a+b.balance,0);
+let inc=state.transactions.filter(t=>t.amount>0)
+.reduce((a,b)=>a+b.amount,0);
+let exp=state.transactions.filter(t=>t.amount<0)
+.reduce((a,b)=>a+b.amount,0);
 
-let spentPercent=Math.min(100,(exp/state.budget)*100);
-document.getElementById("budgetSummary").innerHTML=
-`Spent ${format(exp)} of ${format(state.budget)}
-<div class="progress"><div class="progress-bar" style="width:${spentPercent}%"></div></div>`;
+document.getElementById("dashboard").innerHTML=`
+<div class="card">
+<div>Net Worth</div>
+<div class="balance">${format(net)}</div>
+</div>
 
-let goalsDiv=document.getElementById("goals");
-goalsDiv.innerHTML="";
-state.goals.forEach(g=>{
-let percent=Math.min(100,(g.saved/g.amount)*100);
-goalsDiv.innerHTML+=
-`<div>${g.name} ${format(g.saved)}/${format(g.amount)}
-<div class="progress"><div class="progress-bar" style="width:${percent}%"></div></div></div><br>`;
+<div class="card">
+<h2>Cash Flow</h2>
+<div class="row"><span>Income</span><span>${format(inc)}</span></div>
+<div class="row"><span>Expenses</span><span>${format(exp)}</span></div>
+</div>
+`;
+}
+
+function renderAccounts(){
+let div=document.getElementById("accounts");
+div.innerHTML="<h2>Accounts</h2>";
+state.accounts.forEach(a=>{
+div.innerHTML+=`
+<div class="card">
+<div class="row">
+<span>${a.name}</span>
+<strong>${format(a.balance)}</strong>
+</div>
+</div>`;
 });
-}
-
-function renderCalendar(){
-let container=document.getElementById("calendar");
-container.innerHTML="";
-let date=new Date();
-let year=date.getFullYear();
-let month=date.getMonth();
-let first=new Date(year,month,1).getDay();
-let days=new Date(year,month+1,0).getDate();
-
-container.innerHTML="<h2>Calendar</h2><div class='calendar-grid'>";
-for(let i=0;i<first;i++)container.innerHTML+="<div></div>";
-for(let d=1;d<=days;d++){
-let dayDate=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-let events=[...state.expenses,...state.bills].filter(e=>e.date===dayDate);
-container.innerHTML+=
-`<div class="day"><strong>${d}</strong><br>${events.map(e=>"•"+e.name).join("<br>")}</div>`;
-}
-container.innerHTML+="</div>";
 }
 
 function renderTransactions(){
 let div=document.getElementById("transactions");
-div.innerHTML="<h2>All Transactions</h2>";
-[...state.income,...state.expenses,...state.bills]
+div.innerHTML="<h2>Transactions</h2>";
+state.transactions
 .sort((a,b)=>new Date(b.date)-new Date(a.date))
 .forEach(t=>{
-div.innerHTML+=`<div class="card">${t.name}<br>${format(t.amount)}<br>${t.date}</div>`;
+div.innerHTML+=`
+<div class="card">
+<div class="row">
+<span>${t.name}</span>
+<span>${format(t.amount)}</span>
+</div>
+<small>${t.date}</small>
+</div>`;
 });
+}
+
+function renderBudget(){
+let div=document.getElementById("budget");
+div.innerHTML="<h2>Budget</h2>";
+state.budgets.forEach(b=>{
+let spent=state.transactions
+.filter(t=>t.category===b.name)
+.reduce((a,t)=>a+Math.abs(t.amount),0);
+let percent=Math.min(100,(spent/b.amount)*100);
+div.innerHTML+=`
+<div class="card">
+${b.name}
+<div class="progress"><div class="bar" style="width:${percent}%"></div></div>
+<small>${format(spent)} of ${format(b.amount)}</small>
+</div>`;
+});
+}
+
+function renderGoals(){
+let div=document.getElementById("goals");
+div.innerHTML="<h2>Goals</h2>";
+state.goals.forEach(g=>{
+let percent=Math.min(100,(g.saved/g.amount)*100);
+div.innerHTML+=`
+<div class="card">
+${g.name}
+<div class="progress"><div class="bar" style="width:${percent}%"></div></div>
+<small>${format(g.saved)} / ${format(g.amount)}</small>
+</div>`;
+});
+}
+
+function renderAll(){
+renderDashboard();
+renderAccounts();
+renderTransactions();
+renderBudget();
+renderGoals();
 }
 
 function save(){
@@ -244,36 +239,26 @@ let type=document.getElementById("type").value;
 let name=document.getElementById("name").value;
 let amount=parseFloat(document.getElementById("amount").value)||0;
 let date=document.getElementById("date").value;
-let recurring=document.getElementById("recurring").value;
 
-if(type==="goal"){
-state.goals.push({name,amount,saved:0});
-}else{
-state[type==="income"?"income":type==="expense"?"expenses":"bills"]
-.push({name,amount,date,recurring});
-}
+if(type==="account") state.accounts.push({name,balance:amount});
+if(type==="transaction") state.transactions.push({name,amount,date});
+if(type==="budget") state.budgets.push({name,amount});
+if(type==="goal") state.goals.push({name,amount,saved:0});
+
 persist();
 closeModal();
 renderAll();
 }
 
-function renderAll(){
-renderHome();
-renderCalendar();
-renderTransactions();
-}
-
-function openModal(){document.getElementById("overlay").classList.add("show")}
-function closeModal(){document.getElementById("overlay").classList.remove("show")}
-
 function switchTab(tab,el){
 document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 el.classList.add("active");
-document.getElementById("home").style.display=tab==="home"?"block":"none";
-document.getElementById("calendar").style.display=tab==="calendar"?"block":"none";
-document.getElementById("transactions").style.display=tab==="transactions"?"block":"none";
+["dashboard","accounts","transactions","budget","goals"]
+.forEach(id=>document.getElementById(id).style.display="none");
+document.getElementById(tab).style.display="block";
 }
 
+function closeModal(){document.getElementById("overlay").classList.remove("show")}
 renderAll();
 
 if("serviceWorker" in navigator){
