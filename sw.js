@@ -1,4 +1,4 @@
-const CACHE="pulse-pro-v1";
+const CACHE="ledger-v1";
 self.addEventListener("install",e=>{
 e.waitUntil(
 caches.open(CACHE).then(c=>c.addAll(["./","./index.html"]))
